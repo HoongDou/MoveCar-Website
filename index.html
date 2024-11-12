@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通知车主挪车</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; color: #333; }
+    .container { text-align: center; padding: 20px; width: 100%; max-width: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); background: #fff; }
+    h1 { font-size: 24px; margin-bottom: 20px; color: #007bff; }
+    p { margin-bottom: 20px; font-size: 16px; color: #555; }
+    button {
+        width: 100%;
+        padding: 15px;
+        margin: 10px 0;
+        font-size: 18px;
+        font-weight: bold;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    .notify-btn { background: #28a745; }
+    .notify-btn:hover { background: #218838; }
+    .call-btn { background: #17a2b8; }
+    .call-btn:hover { background: #138496; }
+    .disabled {
+        background: #6c757d !important;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>通知车主挪车</h1>
+    <p>如需通知车主，请点击以下按钮</p>
+    <button id="notifyButton" class="notify-btn" onclick="notifyOwner()">通知车主挪车</button>
+    <button class="call-btn" onclick="callOwner()">拨打车主电话</button>
+</div>
+<script>
+function startCooldown(duration) {
+    const button = document.getElementById('notifyButton');
+    button.disabled = true;
+    button.classList.add('disabled');
+ 
+    // 使用后端提供的冷却时间
+    let cooldown = duration; 
+    button.textContent = `冷却中 (${cooldown}s)`;
+ 
+    const interval = setInterval(() => {
+        cooldown -= 1;
+        if (cooldown > 0) {
+            button.textContent = `冷却中 (${cooldown}s)`;
+        } else {
+            clearInterval(interval);
+            button.disabled = false;
+            button.classList.remove('disabled');
+            button.textContent = "通知车主挪车";
+        }
+    }, 1000);
+}
+ 
+function notifyOwner() {
+    fetch("/fetch.php")
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 0) {
+                alert("通知已发送！");
+                // 这里启动60秒的冷却
+                startCooldown(60);
+            } else if (data.code === 1 && data.cooldown) {
+                // 如果有冷却时间，则开始冷却计时
+                startCooldown(data.cooldown);
+                alert(data.message);
+            } else {
+                alert("通知发送失败，请稍后重试。");
+            }
+        })
+        .catch(error => {
+            console.error("Error sending notification:", error);
+            alert("通知发送出错，请检查网络连接。");
+        });
+}
+ 
+function callOwner() {
+    window.location.href = "tel:13188888888";
+}
+</script>
+</body>
+</html>
